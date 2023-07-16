@@ -2,6 +2,8 @@
 
 # 🚀Quickstart
 
+<img src="docs/framework.png" width="80%"/>
+
 ## Installation Guide
 
 ### 1. Download project
