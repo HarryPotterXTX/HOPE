@@ -1,0 +1,10 @@
+torch
+torchvision
+torchaudio
+tensorboard
+matplotlib
+omegaconf
+tqdm
+einops
+chardet
+opencv-python

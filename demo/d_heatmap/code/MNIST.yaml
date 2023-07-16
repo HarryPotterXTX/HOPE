@@ -1,0 +1,17 @@
+Train:
+  learning_rate: 1e-2
+  batch_size: 128       
+  epoches_num: 100
+  check_point: 20
+  loss: nll   # CrossEntropy nll MSE
+  optimizer: SGD
+
+Log: 
+  outputs_dir: demo/d_heatmap/outputs
+  project_name: MNIST
+  stdlog: false
+  tensorboard: true
+
+Dataset:
+  download: True
+  shuffle: True
