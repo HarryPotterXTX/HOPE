@@ -117,7 +117,11 @@ the results are saved in ''demo/4heatmap/outputs/MNIST_{time}/model/SingleOutput
 ```
 @article 
 {
-    
+xiao2023hope,
+title={HOPE: High-order Polynomial Expansion of Black-box Neural Networks},
+author={Xiao, Tingxiong and Zhang, Weihang and Cheng, Yuxiao and Suo, Jinli},
+journal={arXiv preprint arXiv:2307.08192},
+year={2023}
 }
 ```
 # Contact
