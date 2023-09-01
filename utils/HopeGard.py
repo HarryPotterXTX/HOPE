@@ -30,12 +30,14 @@ def hope_module(f, v:dict, order:int=1, device:str='cpu'):
         vs.append(vx)
         # 3. TBackward0 (W): v=\sum_batch M(x)v; v--(batch,num)->(batch,height,width); x--(batch,num)->(batch,width,height)
         vw = {k:torch.bmm(v[k].unsqueeze(-1), torch.pow(x.unsqueeze(1), k)) for k in v.keys()}
-        vs.append(vw)        
-                                              
+        vs.append(vw)  
+    ######################### y = x1 +x2 #########################     
+    elif type(f).__name__ == 'AddBackward0':
+        vs = [v, v]                                
     ######################### y = torch.bmm(x1, x2) #########################
     elif type(f).__name__ == 'BmmBackward0':
         x1, x2 = f._saved_self, f._saved_mat2
-        assert len(x1.shape)==3 or len(x2.shape)==3, "The dimension of x1, x2 must be 3!" 
+        assert len(x1.shape)==3 and len(x2.shape)==3, "The dimension of x1, x2 must be 3!" 
         # q=mn: a^ky/am^k=(a^ky/aq^k)*(n.T)^.k; a^ky/an^k=(m.T)^.k*(a^ky/aq^k)
         vx1 = {k:torch.bmm(v[k], torch.pow(x2.transpose(1, 2), k)) for k in v.keys()}
         vx2 = {k:torch.bmm(torch.pow(x1.transpose(1, 2), k), v[k]) for k in v.keys()}
@@ -66,7 +68,7 @@ def hope_module(f, v:dict, order:int=1, device:str='cpu'):
         x1, x2 = f._saved_self, f._saved_other
         if x1 != None:
             raise NotImplemented
-        vx = {k:v[k]/x2 for k in v.keys()}
+        vx = {k:v[k]/(x2**k) for k in v.keys()}
         vs = [vx, None]
     elif type(f).__name__ == 'NoneType':                # y = c
         pass 
@@ -79,6 +81,16 @@ def hope_module(f, v:dict, order:int=1, device:str='cpu'):
         # vx = {k:v[k].view(f._saved_self_sym_sizes) for k in v.keys()}
         # vs.append(vx)
         vs.append(v)
+        raise NotImplemented
+    ######################### y = nn.Dropout(attn_dropout)(x): y=torch.mul(x, y.grad_fn._saved_other) #########################
+    elif type(f).__name__ == 'MulBackward0':
+        x1, x2 = f._saved_self, f._saved_other
+        vx1 = {k:torch.mul(torch.pow(x2, k), v[k]) for k in v.keys()} if x2 != None else None
+        vx2 = {k:torch.mul(torch.pow(x1, k), v[k]) for k in v.keys()} if x1 != None else None
+        vs = [vx1, vx2]
+    ######################### y = nn.Softmax(dim=dim)(x): y = torch.exp(x)/torch.exp(x).sum(dim=set_dim).unsqueeze(set_dim) #########################
+    elif type(f).__name__ == 'SoftmaxBackward0':
+        dim, y = f._saved_dim, f._saved_result
         raise NotImplemented
     else:
         raise  Exception(f"Module {type(f).__name__ } has not be developed!")
