@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn 
+import torch.nn.functional as F
 from utils.Logger import reproduc
 from utils.ChainMatrix import ChainTransMatrix, FormulaCal
 from utils.Activation import ActDict
@@ -76,12 +77,10 @@ def hope_module(f, v:dict, order:int=1, device:str='cpu'):
     elif type(f).__name__ == 'TBackward0':              
         vw = {k:torch.sum(v[k], 0) for k in v.keys()}   # v=\sum_batch v
         vs.append(vw)
-    ######################### y = nn.Linear(a, b)(x): x.shape=(batch,1,num) #########################
+    ######################### y = x.view(ouptut_size) #########################
     elif type(f).__name__ == 'ViewBackward0':
-        # vx = {k:v[k].view(f._saved_self_sym_sizes) for k in v.keys()}
-        # vs.append(vx)
-        vs.append(v)
-        raise NotImplemented
+        vx = {k:v[k].view(f._saved_self_sym_sizes) for k in v.keys()}
+        vs.append(vx)
     ######################### y = nn.Dropout(attn_dropout)(x): y=torch.mul(x, y.grad_fn._saved_other) #########################
     elif type(f).__name__ == 'MulBackward0':
         x1, x2 = f._saved_self, f._saved_other
@@ -92,8 +91,30 @@ def hope_module(f, v:dict, order:int=1, device:str='cpu'):
     elif type(f).__name__ == 'SoftmaxBackward0':
         dim, y = f._saved_dim, f._saved_result
         raise NotImplemented
+    ######################### y = nn.nn.AvgPool2d()(x): z = conv(x, W) + b: a^ky/ax^k = conv(a^ky/az^k, rotate(W^(ok))) #########################
+    elif type(f).__name__ == 'ConvolutionBackward0':
+        stride, padding, dilation = f._saved_stride, f._saved_padding, f._saved_dilation
+        x, W = f._saved_input, f._saved_weight  # x: (batch channel height width); W: (outdim channel height width)
+        # 1. **Backward0 (x)
+        output_padding = ((x.shape[-2]-W.shape[-2]+2*padding[0])%stride[0], (x.shape[-1]-W.shape[-1]+2*padding[1])%stride[1])
+        vx = {k:F.conv_transpose2d(input=v[k], weight=torch.pow(W, k), stride=stride, padding=padding, output_padding=output_padding, dilation=dilation) for k in v.keys()}
+        # 2. AccumulateGrad (W) # TODO
+        vw = None
+        # 3. AccumulateGrad (b) # TODO
+        vb = None
+        vs = [vx, vw, vb]
+    ######################### y = nn.AvgPool2d()(x) #########################
+    elif type(f).__name__ == 'AvgPool2DBackward0':
+        kernel_size, stride, padding = f._saved_kernel_size, f._saved_stride, f._saved_padding
+        x = f._saved_self   # x: (batch channel height width); W: (outdim=channel channel height width)
+        W = torch.zeros(x.shape[-3], x.shape[-3], kernel_size[0], kernel_size[1])
+        for i in range(W.shape[0]):
+            W[i][i] = torch.ones(kernel_size[0], kernel_size[1])/(kernel_size[0]*kernel_size[1])
+        output_padding = ((x.shape[-2]-W.shape[-2]+2*padding[0])%stride[0], (x.shape[-1]-W.shape[-1]+2*padding[1])%stride[1])
+        vx = {k:F.conv_transpose2d(input=v[k], weight=torch.pow(W, k), stride=stride, padding=padding, output_padding=output_padding) for k in v.keys()}
+        vs = [vx]
     else:
-        raise  Exception(f"Module {type(f).__name__ } has not be developed!")
+        raise Exception(f"Module {type(f).__name__ } has not be developed!")
     return vs
 
 def hopegrad(y:torch.tensor, order:int=10, device:str='cpu'):
@@ -110,7 +131,8 @@ def hopegrad(y:torch.tensor, order:int=10, device:str='cpu'):
         assert len(vs)==len(fs), "The number of vectors and functions should be the same!"
         for f, v in zip(fs, vs):    
             if type(f).__name__ == 'AccumulateGrad':        # leaf node
-                v = {k:v[k].detach() for k in v.keys()}
+                if v != None:
+                    v = {k:v[k].detach() for k in v.keys()}
                 f.variable.hope_grad = {k:f.variable.hope_grad[k]+v[k] for k in v.keys()} if hasattr(f.variable, 'hope_grad') else v
             elif f!=None:
                 queue.append([f, v])
