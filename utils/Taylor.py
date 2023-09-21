@@ -20,6 +20,10 @@ def CalMatAct(Module, MatCal:Dict, input:torch.tensor, block:bool=False):
     act = JudgeAct(Module, order)
     if not block and len(input.shape)>2:    # fc: batch num; conv: batch channel height width
         input = input.view(input.shape[0], -1)
+    if 'Sigmoid' in str(type(Module)):      # Act.diff(input, i), the input parameter is the output of the activation function for Sigmoid and Tanh
+        input = torch.sigmoid(input)
+    elif 'Tanh' in str(type(Module)):   
+        input = torch.tanh(input)
     Beta = {}
     for i in range(1, order+1):
         Beta[i] = act.diff(input, i)        # Beta_i = diag(act.diff) it is not urgent to convert

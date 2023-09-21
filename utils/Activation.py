@@ -57,10 +57,9 @@ class SigmoidAct():
                 B[k][i] = i*B[k-1][i]-(i-1)*B[k-1][i-1] # B_{k,i}=iB_{k-1,i}-(i-1)B_{k-1,i-1}, & i=2,\ldots,k-1
             B[k][k] = -(k-1)*B[k-1][k-1]                # B_{k,k}=-(k-1)B_{k-1,k-1}
         self.B = B
-    def diff(self, input:torch.tensor, n:int):
+    def diff(self, output:torch.tensor, n:int):
         formula = self.B[n+1]
-        output = torch.sigmoid(input)
-        gradient = torch.zeros_like(input)
+        gradient = torch.zeros_like(output)
         for key in formula.keys():
             power = int(key)
             gradient = gradient + int(formula[key])*torch.pow(output, power)
@@ -80,10 +79,9 @@ class TanhAct():
             C[k][k] = -(k-2)*C[k-1][k-1]                        # C_{k,k}=-(k-2)C_{k-1,k-1}
             C[k][k+1] = 0
         self.C = C
-    def diff(self, input:torch.tensor, n:int):
+    def diff(self, output:torch.tensor, n:int):
         formula = self.C[n+2]
-        output = torch.tanh(input)
-        gradient = torch.zeros_like(input)
+        gradient = torch.zeros_like(output)
         for key in formula.keys():
             power = int(key)-1
             gradient = gradient + int(formula[key])*torch.pow(output, power)

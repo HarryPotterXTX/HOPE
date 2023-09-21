@@ -1,9 +1,6 @@
 from typing import Dict, List
-from matplotlib.pyplot import flag
 import torch
 import copy
-import time
-import numpy as np
 
 def SingleStrFormula(single_formula:List):
     """
@@ -137,15 +134,15 @@ def Diff(formula:List):
                 result[Index[Flag.index(order_power)]][0] += tem_single[0]
     return result
             
-def ChainTransMatrix(n:int):
+def ChainTransMatrix(order:int):
     """
     Function: Find the n-order chain transformation matrix expression
     """
     BnCal = {}
-    for i in range(1,n+1):
+    for i in range(1,order+1):
         BnCal[i] = {}
     BnCal[1][1] = [[1,1,1]]
-    for i in range(2,n+1):
+    for i in range(2,order+1):
         for j in range(1,i+1):
             # Bij = aB(i-1,j)/ax + ag/ax*B(i-1,j-1)
             if j == 1:
@@ -154,12 +151,6 @@ def ChainTransMatrix(n:int):
                 BnCal[i][j] = [[1,1,i]]
             else:
                 BnCal[i][j] = AddFormula(Diff(BnCal[i-1][j]), MultiFormula(1,1,BnCal[i-1][j-1]))
-    # print(f'The first {n}-order chain transformation matrix is:')
-    # for key in BnCal.keys():
-    #     info = f'B{key} = '
-    #     for sub_key in BnCal[key].keys():
-    #         info += StrFormula(BnCal[key][sub_key]) + ', '
-    #     print(info)
     return BnCal
 
 def SingleFormulaCal(formula:list, derivatives:Dict):
@@ -192,32 +183,3 @@ def ChainCal(BnCal:Dict, derivatives:Dict):
             x1, x2, y1, y2 = shape[-2]*(int(key)-1), shape[-2]*int(key), shape[-1]*(int(sub_key)-1), shape[-1]*int(sub_key)
             result[:,x1:x2,y1:y2] = FormulaCal(formula, derivatives)
     return result
-
-# def ChainCal(BnCal:Dict, derivatives:Dict):
-#     n = len(BnCal.keys())
-#     batch = derivatives[1].shape[0]
-#     row = [derivatives[key].shape[1] for key in derivatives.keys()] # when not include mixed partial derivatives, row=shape[1]*n
-#     col =  derivatives[1].shape[2]
-#     result = torch.zeros((batch, sum(row), col*n))
-#     for key in BnCal.keys():
-#         x1, x2 = sum(row[:int(key)-1]), sum(row[:int(key)])         # row
-#         for sub_key in BnCal[key].keys():
-#             y1, y2 = col*(int(sub_key)-1), col*int(sub_key)
-#             formula = BnCal[key][sub_key]
-#             result[:,x1:x2,y1:y2] = FormulaCal(formula, derivatives)
-#     return result
-
-if __name__=="__main__":
-    formula = [[1,2,3],[1,1,2]]
-    derivatives = {}
-    derivatives[1] = np.mat([[1,2,3],[4,5,6]])
-    derivatives[2] = np.mat([[3,2,3],[1,9,2]])
-    derivatives[3] = np.mat([[0,3,1],[9,4,2]])
-    derivatives[4] = np.mat([[8,2,5],[7,0,9]])
-    # result = SingleFormulaCal(formula, derivatives)
-    result = FormulaCal(formula, derivatives)
-
-    n = 4
-    BnCal = ChainTransMatrix(n)
-    result = ChainCal(BnCal, derivatives)
-    print(result)
