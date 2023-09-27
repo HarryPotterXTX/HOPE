@@ -10,14 +10,15 @@ global common_modules
 common_modules = {}
 ActDict = {'SinBackward0':SineAct, 'SigmoidBackward0':SigmoidAct, 'TanhBackward0':TanhAct}
 
-def load_class(name:str, **kwargs):
-    # Save commonly used components to avoid time waste of initialization
-    if not name in common_modules.keys():
+def load_class(name:str, order:int, **kwargs):
+    ''' Save commonly used components to avoid time waste of initialization'''
+    key = name + str(order)
+    if not key in common_modules.keys():
         if name == 'Chain':
-            common_modules[name] = ChainTransMatrix(**kwargs) 
+            common_modules[key] = ChainTransMatrix(order=order) 
         else:
-            common_modules[name] = ActDict[name](**kwargs)
-    return common_modules[name]
+            common_modules[key] = ActDict[name](order=order, **kwargs)
+    return common_modules[key]
 
 def cal_act_vx(Beta, vz):
     ''' x -> act function -> z -> other modules -> y
@@ -31,7 +32,7 @@ def cal_act_vx(Beta, vz):
             vx[k] = vx[k] + torch.mul(FormulaCal(chain_module[k][s], Beta), vz[s])
     return vx
 
-def hope_module(f, vz:dict, order:int=1, device:str='cpu', mixed:bool=False):
+def hope_module(f, vz:dict, order:int=1, device:str='cpu', mixed:int=0):
     ''' x -> module -> z -> other modules -> y: 
             we have vz[k] = [a^ky/az^k], and we want to calculate vx[k] = [a^ky/ax^k]
     '''
@@ -43,16 +44,19 @@ def hope_module(f, vz:dict, order:int=1, device:str='cpu', mixed:bool=False):
         assert len(x.shape)==2 and len(vz[1].shape)==2, "x.shape should be (batch, num)"
         # 1. AccumulateGrad (b): vx = vz    
         # 2. **Backward0 (x): vx=M(W)vy (batch,num)->(batch,height,width)->(batch,num)
-        if mixed == True and Wt.shape[0] > 1 and type(f.next_functions[1][0]).__name__ == 'AccumulateGrad':   
-            vx = {}                             # (1) mixed partial derivatives
-            dx, dz = Wt.shape
-            Wk = torch.ones(1, dz)
-            for k in range(1, order+1):
-                augW1 = torch.kron(Wt.contiguous(), torch.ones(dx**(k-1), 1))  
-                augW2 = torch.kron(torch.ones(dx, 1), Wk) 
-                Wk = torch.mul(augW1, augW2)
-                vx[k] = torch.matmul(Wk, vz[k].unsqueeze(-1))
-        else:                                   # (2) unmixed partial derivatives
+        if mixed > 0 and Wt.shape[0] > 1 and type(f.next_functions[1][0]).__name__ == 'AccumulateGrad':   
+            if mixed == 1:                      # mixed=1: calculate all the mixed partial derivatives
+                vx = {}                             
+                dx, dz = Wt.shape
+                Wk = torch.ones(1, dz)
+                for k in range(1, order+1):
+                    augW1 = torch.kron(Wt.contiguous(), torch.ones(dx**(k-1), 1))  
+                    augW2 = torch.kron(torch.ones(dx, 1), Wk) 
+                    Wk = torch.mul(augW1, augW2)
+                    vx[k] = torch.matmul(Wk, vz[k].unsqueeze(-1))
+            elif mixed == 2:                    # mixed=2: calculate part of the mixed partial derivatives
+                vx = {'Wt':Wt, 'vz':vz}            
+        else:                                   # mixed=0: calculate all the unmixed partial derivatives
             vx = {k:torch.matmul(torch.pow(Wt, k), vz[k].unsqueeze(-1)).squeeze(-1) for k in vz.keys()}
         # 3. TBackward0 (W): v=\sum_batch M(x)v; v--(batch,num)->(batch,height,width); x--(batch,num)->(batch,width,height)
         vw = {k:torch.bmm(vz[k].unsqueeze(-1), torch.pow(x.unsqueeze(1), k)) for k in vz.keys()}
@@ -158,7 +162,10 @@ def hope_module(f, vz:dict, order:int=1, device:str='cpu', mixed:bool=False):
         raise Exception(f"Module {module} has not be developed!")
     return vs
 
-def hopegrad(y:torch.tensor, order:int=10, device:str='cpu', mixed:bool=False):
+def hopegrad(y:torch.tensor, order:int=10, device:str='cpu', mixed:int=0):
+    '''calculate the high-order partial derivatives. 
+        mixed=0: calculate all the unmixed derivatives; mixed=1: calculate all the mixed derivatives; mixed=2: calculate part of the mixed derivatives
+    '''
     assert len(y.shape)==2, "The shape of y should be (batch, 1)!"
     f = y.grad_fn
     v = {i:torch.zeros((y.shape[0],1)).to(device) for i in range(1, order+1)}   # initial derivative vector
@@ -171,9 +178,35 @@ def hopegrad(y:torch.tensor, order:int=10, device:str='cpu', mixed:bool=False):
         # print([type(f).__name__ for f in fs], [v[1].shape if v!=None else None for v in vs])
         assert len(vs)==len(fs), "The number of vectors and functions should be the same!"
         for f, v in zip(fs, vs):    
-            if type(f).__name__ == 'AccumulateGrad':        # leaf node
-                if v != None:
-                    v = {k:v[k].detach() for k in v.keys()}
-                f.variable.hope_grad = {k:f.variable.hope_grad[k]+v[k] for k in v.keys()} if hasattr(f.variable, 'hope_grad') else v
+            if type(f).__name__ == 'AccumulateGrad':            # leaf node
+                if type(f.variable).__name__ != 'Parameter':    # not network parameter
+                    if v != None:
+                        v = {k:v[k].detach() if type(v[k])!=dict else v[k] for k in v.keys()}
+                    f.variable.hope_grad = {k:f.variable.hope_grad[k]+v[k] for k in v.keys()} if hasattr(f.variable, 'hope_grad') else v
             elif f!=None:
                 queue.append([f, v])
+
+def mixed_part(Wt:torch.tensor, vz:dict[torch.tensor], idxs:list[int]):
+    '''calculate the mixed partial derivative
+    input:
+        Wt: the weight of the first layer
+        vz: {'1':[ay/az], '2':[a^2y/az^2], ..., 'n':[a^ny/az^n]}
+        idxs: [i1,i2,i3,...ik]
+    output: 
+        a^ny/a(x_i1)a(x_i2)...a(x_ik)
+    '''
+    # W = torch.ones((Wt.shape[0], 1))
+    W = 1
+    for idx in idxs:
+        W = torch.mul(W, Wt[idx-1])
+    pd = torch.matmul(W, vz[len(idxs)].unsqueeze(-1))
+    return pd
+
+def decode_idx(idxs:list[int], p:int):
+    '''get the idx of a^my/a(x_i1)a(x_i2)...a(x_im) in vx[m], where vx[m]=[a^my/a(x_1)^m, a^my/a(x_1)^(m-1)a(x_2),...]
+        idxs=[i1,i2,...,im], p: input dimension; output: the idx of a^my/a(x_i1)a(x_i2)...a(x_im)
+    '''
+    idx = 0
+    for id in idxs:
+        idx = idx*p + (id-1)
+    return idx

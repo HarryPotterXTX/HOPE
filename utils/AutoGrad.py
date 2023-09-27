@@ -2,6 +2,7 @@ import math
 import torch
 
 def cald(y,x,idx):
+    """output: ay/a(x_idx)"""
     return torch.autograd.grad(y, x, grad_outputs=torch.ones_like(y), create_graph=True)[0][:, idx].reshape(-1, 1)
 
 def cal_grad(y:torch.tensor, x:torch.tensor, idx:tuple=(0), order:int=10):
