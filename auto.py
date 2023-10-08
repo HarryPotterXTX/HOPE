@@ -1,80 +1,65 @@
-import torch
-import numpy as np
 import os
+import sys
 import time
+from tqdm import tqdm
+import torch
 import argparse
-# import sys
-# sys.path.append(os.path.abspath(os.path.join(__file__, "../../../..")))
+import numpy as np
 
-def cald(y,x,idx):
-    return torch.autograd.grad(y, x, grad_outputs=torch.ones_like(y), create_graph=True)[0][:, idx].reshape(-1, 1)
+def cald(y, x, idx):
+    '''calculate ay/a(x_idx)'''
+    return torch.autograd.grad(y, x, grad_outputs=torch.ones_like(y), create_graph=True)[0][:,idx-1].reshape(-1, 1)
 
-def Autograd_Expansion(work_point, order, net_path, mixed):
+def autograd(y:torch.tensor, x:torch.tensor, order:int=10):
+    '''calculate the n-order partial derivatives'''
+    v = {0:[y]}
+    p = x.numel()
+    bar = order if p==1 else int((1-p**(order+1))/(1-p))-1
+    pbar = tqdm(total=bar, desc='Calculating derivatives with Autograd', leave=True, file=sys.stdout)
+    for k in range(1, order+1):
+        v[k] = []
+        for i in range(len(v[k-1])):    # eg. when p=3 and k=3, v[k-1] = [11, 12, 13, 21, 22, 23, ..., 33]
+            for j in range(1, p+1):     # eg. when p=3 and k=3, v[k] = [111, 112, 113, 121, 122, 123, ..., 333]
+                v[k].append(cald(v[k-1][i], x, j)) 
+                pbar.set_postfix_str("order:{}, idx:{}/{}".format(k, i*p+j, len(v[k-1]*p)))
+                pbar.update(1)
+    return v
+
+def main(net_path, order, point):
     net_dir = os.path.dirname(net_path)
-    auto_dir = os.path.join(net_dir, 'npy')
-    if not os.path.exists(auto_dir):
-        os.mkdir(auto_dir)
-    save_path = os.path.join(auto_dir, 'Autograd_'+str(work_point)+'_'+str(order)+'_'+str(mixed))
+    npy_dir = os.path.join(net_dir, 'npy')
+    if not os.path.exists(npy_dir):
+        os.mkdir(npy_dir)
+    npy_path = os.path.join(npy_dir, f'Autograd_{point}_{order}')
 
+    # Forward propagation
+    x = torch.tensor(point, dtype=torch.float, requires_grad=True)
     net = torch.load(net_path).eval()
-    net.requires_grad = False
-    x = torch.tensor(work_point, dtype=torch.float32, requires_grad=True)
+    print(net)
     y = net(x)
 
-    info_dict = {0:[y]}
-    info_list = [y]
+    # Calculate all the derivatives
     time_start = time.time()
-    p = len(work_point[0])
-    for i in range(1,order+1):
-        info_dict[i]=[]
-        for j in range(len(info_dict[i-1])):
-            y = info_dict[i-1][j]
-            for k in range(p):
-                if not mixed:
-                    if len(info_dict[i-1])==1:
-                        d = cald(y,x,k)
-                        info_dict[i].append(d)
-                    elif j==k:
-                        d = cald(y,x,k)
-                        info_dict[i].append(d)
-                else:
-                    d = cald(y,x,k)
-                    info_dict[i].append(d)
-                    # print(i,j,k)
-        info_list += info_dict[i]
-        if p > 1:
-            print('Autograd {} order: {:.6f}s'.format(i, time.time()-time_start))
+    v = autograd(y=y, x=x, order=order)
     time_auto = time.time()-time_start
-    info_list = [float(d.detach().numpy()) for d in info_list]
-    np.save(save_path, info_list)
+    print('It takes {:.4f}s to calculate all the {}-order derivatives with Autograd.'.format(time_auto, order))
+    v = {k: [float(d.detach().numpy()) for d in v[k]] for k in v.keys()}
+    print(f'The number of derivatives of each order are: {str([len(v[k]) for k in v.keys()])}')
+    np.save(npy_path, v)
 
-    time_dir = os.path.join(auto_dir, 'time')
+    # Record the time cost
+    time_dir = os.path.join(npy_dir, 'time')
     if not os.path.exists(time_dir):
         os.mkdir(time_dir)
-    f = open(os.path.join(time_dir,'Autograd_'+str(work_point)+'_'+str(order)+'_'+str(mixed)+'.txt'),'w+')
-    f.write(f'auto {work_point} {order} {mixed}: {time_auto}')
+    f = open(os.path.join(time_dir,f'Autograd_{point}_{order}.txt'), 'w+')
+    f.write(f'Method: Autograd \nReference Point: {point} \nOrder: {order} \nTime Cost: {time_auto}s')
     f.close()
 
-    print('time cost of Autograd: {:.4f}s'.format(time_auto))
-    print(f'the total number of derivatives is: {len(info_list)-1}')
-    deri_info = '{:.4f}'.format(info_list[0])
-    for i in range(min(10,len(info_list)-1)):
-        deri_info += ', {:.2e}'.format(info_list[i+1])
-    if len(info_list) > 11:
-        deri_info += ' ...'
-    print(f'derivatives: {deri_info}')
-
 if __name__=="__main__":
-    parser = argparse.ArgumentParser(description='Autograd expansion')
-    parser.add_argument('-d', type=str, default='demo/1accuracy/outputs/1D_MLP_Sine/net.pt', help='network path')
-    parser.add_argument('-o', type=int, default=10, help='expansion order')
-    parser.add_argument('-m', type=bool, default=True, help='mixed partial derivatives')
-    parser.add_argument('-p', type=lambda s: [[float(item) for item in s.split(',')]], default='0', help='reference input')
+    parser = argparse.ArgumentParser(description='Taylor expansion')
+    parser.add_argument('-d', type=str, default='outputs/test2d/net.pt', help='network path')
+    parser.add_argument('-o', type=int, default=8, help='expansion order')
+    parser.add_argument('-p', type=lambda s: [[float(item) if item[0]!='n' else -float(item[1:]) for item in s.split(',')]], default='0, 0', help='reference input')
     args = parser.parse_args()
-    
-    net_path = args.d
-    order = args.o
-    mixed = args.m
-    work_point = args.p
 
-    Autograd_Expansion(work_point, order, net_path, mixed)
+    main(net_path=args.d, order=args.o, point=args.p)

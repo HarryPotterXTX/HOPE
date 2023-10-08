@@ -32,7 +32,7 @@ def cal_act_vx(Beta, vz):
             vx[k] = vx[k] + torch.mul(FormulaCal(chain_module[k][s], Beta), vz[s])
     return vx
 
-def hope_module(f, vz:dict, order:int=1, device:str='cpu', mixed:int=0):
+def hope_module(f, vz:dict, order:int=1, mixed:int=0):
     ''' x -> module -> z -> other modules -> y: 
             we have vz[k] = [a^ky/az^k], and we want to calculate vx[k] = [a^ky/ax^k]
     '''
@@ -42,7 +42,7 @@ def hope_module(f, vz:dict, order:int=1, device:str='cpu', mixed:int=0):
     if module == 'AddmmBackward0':    
         x, Wt = f._saved_mat1, f._saved_mat2
         assert len(x.shape)==2 and len(vz[1].shape)==2, "x.shape should be (batch, num)"
-        # 1. AccumulateGrad (b): vx = vz    
+        # 1. AccumulateGrad (b): vb = vz
         # 2. **Backward0 (x): vx=M(W)vy (batch,num)->(batch,height,width)->(batch,num)
         if mixed > 0 and Wt.shape[0] > 1 and type(f.next_functions[1][0]).__name__ == 'AccumulateGrad':   
             if mixed == 1:                      # mixed=1: calculate all the mixed partial derivatives
@@ -59,8 +59,9 @@ def hope_module(f, vz:dict, order:int=1, device:str='cpu', mixed:int=0):
         else:                                   # mixed=0: calculate all the unmixed partial derivatives
             vx = {k:torch.matmul(torch.pow(Wt, k), vz[k].unsqueeze(-1)).squeeze(-1) for k in vz.keys()}
         # 3. TBackward0 (W): v=\sum_batch M(x)v; v--(batch,num)->(batch,height,width); x--(batch,num)->(batch,width,height)
-        vw = {k:torch.bmm(vz[k].unsqueeze(-1), torch.pow(x.unsqueeze(1), k)) for k in vz.keys()}
-        vs = [vz, vx, vw]  
+        # vw = {k:torch.bmm(vz[k].unsqueeze(-1), torch.pow(x.unsqueeze(1), k)) for k in vz.keys()}
+        # vs = [vz, vx, vw]  
+        vs = [None, vx, None]  
     ######################### z = x1 + x2 #########################     
     elif module == 'AddBackward0':
         vs = [vz, vz]                                
@@ -117,7 +118,8 @@ def hope_module(f, vz:dict, order:int=1, device:str='cpu', mixed:int=0):
         vs = [vx, None] 
     ######################### weight of linear layer: TBackward0 -> AccumulateGrad ######################### 
     elif module == 'TBackward0':              
-        vw = {k:torch.sum(vz[k], 0) for k in vz.keys()}   # v=\sum_batch v
+        # vw = {k:torch.sum(vz[k], 0) for k in vz.keys()}   # v=\sum_batch v
+        vw = None   # save gpu
         vs.append(vw)
     ######################### z = x.view(ouptut_size) #########################
     elif module == 'ViewBackward0':
@@ -162,29 +164,41 @@ def hope_module(f, vz:dict, order:int=1, device:str='cpu', mixed:int=0):
         raise Exception(f"Module {module} has not be developed!")
     return vs
 
-def hopegrad(y:torch.tensor, order:int=10, device:str='cpu', mixed:int=0):
+def hopegrad(y:torch.tensor, order:int=10, mixed:int=0):
     '''calculate the high-order partial derivatives. 
         mixed=0: calculate all the unmixed derivatives; mixed=1: calculate all the mixed derivatives; mixed=2: calculate part of the mixed derivatives
     '''
     assert len(y.shape)==2, "The shape of y should be (batch, 1)!"
     f = y.grad_fn
-    v = {i:torch.zeros((y.shape[0],1)).to(device) for i in range(1, order+1)}   # initial derivative vector
-    v[1] = torch.ones((y.shape[0],1)).to(device)
+    v = {i:torch.zeros((y.shape[0],1)).to(y.device) for i in range(1, order+1)}   # initial derivative vector
+    v[1] = torch.ones((y.shape[0],1)).to(y.device)
     queue = [[f, v]]
     while queue != []:
         item = queue.pop()
-        vs = hope_module(f=item[0], vz=item[1], order=order, device=device, mixed=mixed)
+        vs = hope_module(f=item[0], vz=item[1], order=order, mixed=mixed)
         fs = [f[0] for f in item[0].next_functions]    
         # print([type(f).__name__ for f in fs], [v[1].shape if v!=None else None for v in vs])
         assert len(vs)==len(fs), "The number of vectors and functions should be the same!"
         for f, v in zip(fs, vs):    
             if type(f).__name__ == 'AccumulateGrad':            # leaf node
                 if type(f.variable).__name__ != 'Parameter':    # not network parameter
-                    if v != None:
-                        v = {k:v[k].detach() if type(v[k])!=dict else v[k] for k in v.keys()}
+                    # if v != None:
+                    #     v = {k:v[k].detach() if type(v[k])!=dict else v[k] for k in v.keys()}
                     f.variable.hope_grad = {k:f.variable.hope_grad[k]+v[k] for k in v.keys()} if hasattr(f.variable, 'hope_grad') else v
             elif f!=None:
                 queue.append([f, v])
+
+def cleargrad(y:torch.tensor):
+    '''clear all the grad
+    '''
+    queue = [y.grad_fn]
+    while queue != []:
+        item = queue.pop()
+        for f in item.next_functions:
+            queue.append(f[0])
+            if type(f[0]).__name__ == 'AccumulateGrad':
+                if type(f[0].variable).__name__ != 'Parameter':    # not network parameter
+                    f[0].variable.hope_grad = None
 
 def mixed_part(Wt:torch.tensor, vz:dict[torch.tensor], idxs:list[int]):
     '''calculate the mixed partial derivative
