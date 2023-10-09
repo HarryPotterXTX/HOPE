@@ -1,21 +1,20 @@
-import torch
 import os
-import shutil
-from tqdm import tqdm
-from omegaconf import OmegaConf
-import argparse
 import sys
 import json
 import copy
 import time
-import sys
+import torch
+import shutil
+import argparse
+from tqdm import tqdm
+from omegaconf import OmegaConf
 sys.path.append(os.path.abspath(os.path.join(__file__, "../../../..")))
 from utils.Logger import MyLogger, reproduc
 from utils.Network import Network
 from utils.Optimizer import create_optim, create_lr_scheduler
 from utils.Samplers import SamplerDict
 
-class DeepTaylor:
+class DiscoveryFramework:
     def __init__(self, opt, Log) -> None:
         self.opt = opt
         self.Log = Log
@@ -92,12 +91,12 @@ def main():
     shutil.copy('utils/Samplers.py', Log.script_dir)
     reproduc()
 
-    frame = DeepTaylor(opt.Framework, Log)
+    frame = DiscoveryFramework(opt.Framework, Log)
     frame.train()
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description='single task')
-    parser.add_argument('-p', type=str, default='demo/c_discovery/code/exp.yaml', help='config file path')
+    parser.add_argument('-p', type=str, default='demo/discovery/code/exp.yaml', help='config file path')
     parser.add_argument('-g', help='availabel gpu list', default='0',
                         type=lambda s: [int(item) for item in s.split(',')])
     args = parser.parse_args()

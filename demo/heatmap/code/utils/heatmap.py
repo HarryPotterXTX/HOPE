@@ -30,7 +30,7 @@ def normal(origin, ratio, positive=True):
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='1-D curves')
-    parser.add_argument('-p', type=str, default='demo/d_heatmap/outputs/MNIST_2023_0716_141750/model/SingleOutput', help='model dir')
+    parser.add_argument('-p', type=str, default='demo/heatmap/outputs/MNIST_2023_1009_082528/model/SingleOutput', help='model dir')
     parser.add_argument('-n', type=int, default=0, help='model idx')
     parser.add_argument('-l', type=int, default=0, help='label of img')
     parser.add_argument('-i', type=int, default=0, help='img index')
@@ -47,7 +47,7 @@ if __name__=="__main__":
 
     npy_dir = os.path.join(net_dir, 'npy', f'net-{net_idx}_label-{label}_idx-{idx}')
     tay_heat = np.zeros((28,28))
-    save_dir = f'demo/d_heatmap/heatmaps/net-{net_idx}_label-{label}_idx-{idx}/dx-{delta_x}_ratio-{ratio}'
+    save_dir = f'demo/heatmap/heatmaps/net-{net_idx}_label-{label}_idx-{idx}/dx-{delta_x}_ratio-{ratio}'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     time_start = time.time()

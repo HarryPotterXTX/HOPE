@@ -1,10 +1,10 @@
 import os
 import sys
 import time
-from tqdm import tqdm
 import torch
 import argparse
 import numpy as np
+from tqdm import tqdm
 
 def cald(y, x, idx):
     '''calculate ay/a(x_idx)'''
@@ -25,12 +25,12 @@ def autograd(y:torch.tensor, x:torch.tensor, order:int=10):
                 pbar.update(1)
     return v
 
-def main(net_path, order, point):
+def main(net_path, order, point, show):
     net_dir = os.path.dirname(net_path)
     npy_dir = os.path.join(net_dir, 'npy')
     if not os.path.exists(npy_dir):
         os.mkdir(npy_dir)
-    npy_path = os.path.join(npy_dir, f'Autograd_{point}_{order}')
+    npy_path = os.path.join(npy_dir, f'Autograd_{point}_{order}').replace(" ","")
 
     # Forward propagation
     x = torch.tensor(point, dtype=torch.float, requires_grad=True)
@@ -55,11 +55,17 @@ def main(net_path, order, point):
     f.write(f'Method: Autograd \nReference Point: {point} \nOrder: {order} \nTime Cost: {time_auto}s')
     f.close()
 
+    # show results
+    if show:
+        for key in range(max(v.keys())+1):
+            print(f'{key} order derivatives: {v[key]}')
+
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Taylor expansion')
     parser.add_argument('-d', type=str, default='outputs/test2d/net.pt', help='network path')
     parser.add_argument('-o', type=int, default=8, help='expansion order')
     parser.add_argument('-p', type=lambda s: [[float(item) if item[0]!='n' else -float(item[1:]) for item in s.split(',')]], default='0, 0', help='reference input')
+    parser.add_argument('-s', action='store_true', help='show results')
     args = parser.parse_args()
 
-    main(net_path=args.d, order=args.o, point=args.p)
+    main(net_path=args.d, order=args.o, point=args.p, show=args.s)

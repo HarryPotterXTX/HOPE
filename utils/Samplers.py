@@ -1,8 +1,6 @@
 import math
 import torch
 from torch import pi as pi
-from torch import sin, cos, exp
-import numpy as np
 
 def create_flattened_coords(shape) -> torch.Tensor:
     parameter = []

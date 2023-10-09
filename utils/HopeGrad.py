@@ -1,8 +1,6 @@
-import torch
-import torch.nn as nn 
 import math
+import torch
 import torch.nn.functional as F
-from utils.Logger import reproduc
 from utils.ChainMatrix import ChainTransMatrix, FormulaCal
 from utils.Activation import SineAct, SigmoidAct, TanhAct
 

@@ -3,7 +3,7 @@ import os
 import argparse
 import sys
 sys.path.append(os.path.abspath(os.path.join(__file__, "../../../..")))
-from demo.d_heatmap.code.trainMNIST import MNISTNet
+from demo.heatmap.code.trainMNIST import MNISTNet
 
 class SingleNet(torch.nn.Module):
     def __init__(self, orig_net, out_idx):
@@ -28,7 +28,7 @@ class SingleNet(torch.nn.Module):
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='project dir')
-    parser.add_argument('-p', type=str, default='demo/d_heatmap/outputs/MNIST_2023_0716_141750', help='model dir')
+    parser.add_argument('-p', type=str, default='demo/heatmap/outputs/MNIST_2023_1009_082528', help='model dir')
     args = parser.parse_args()
     pro_dir = args.p
     path = os.path.join(pro_dir, 'model', 'best.pt')

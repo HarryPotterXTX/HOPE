@@ -7,13 +7,13 @@ import time
 import argparse
 import sys
 sys.path.append(os.path.abspath(os.path.join(__file__, "../../../../..")))
-from demo.d_heatmap.code.utils.heatmap import normal
-from demo.d_heatmap.code.trainMNIST import MNISTNet
-from demo.d_heatmap.code.single_net import SingleNet 
+from demo.heatmap.code.utils.heatmap import normal
+from demo.heatmap.code.trainMNIST import MNISTNet
+from demo.heatmap.code.single_net import SingleNet 
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='1-D curves')
-    parser.add_argument('-p', type=str, default='demo/d_heatmap/outputs/MNIST_2023_0716_141750/model/SingleOutput', help='model dir')
+    parser.add_argument('-p', type=str, default='demo/heatmap/outputs/MNIST_2023_0716_141750/model/SingleOutput', help='model dir')
     parser.add_argument('-n', type=int, default=0, help='model idx')
     parser.add_argument('-l', type=int, default=0, help='label of img')
     parser.add_argument('-i', type=int, default=0, help='img index')
@@ -29,11 +29,11 @@ if __name__=="__main__":
     net_dir = args.p
 
     net = torch.load(os.path.join(net_dir, str(net_idx)+'.pt')).cpu().eval()
-    save_dir = f'demo/d_heatmap/heatmaps/net-{net_idx}_label-{label}_idx-{idx}/dx-{delta_x}_ratio-{ratio}'
+    save_dir = f'demo/heatmap/heatmaps/net-{net_idx}_label-{label}_idx-{idx}/dx-{delta_x}_ratio-{ratio}'
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
     
-    img_path = f'demo/d_heatmap/data/test/{label}/{idx}.png'
+    img_path = f'demo/heatmap/data/test/{label}/{idx}.png'
     image = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
     x0 = torch.tensor([[image]],dtype=torch.float32)
     y0 = net(x0)

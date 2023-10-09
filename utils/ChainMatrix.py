@@ -1,6 +1,6 @@
-from typing import Dict, List
-import torch
 import copy
+import torch
+from typing import Dict, List
 
 def SingleStrFormula(single_formula:List):
     """

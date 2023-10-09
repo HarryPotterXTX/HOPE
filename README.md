@@ -21,97 +21,77 @@
 
 ## Usage Guide
 
-### 1. The accuracy of expansion
+### 1. Expand ''black-box'' neural networks into explicit expressions
 
 <img src="docs/fig1.png" width="80%"/>
 
-#### (a) Build some neural networks
+For the high-order Taylor expansion of neural networks, we provide two implementations, HOPE and Autograd. Users can conveniently compute high-order derivatives of neural networks and obtain Taylor series approximations for the network by calling **hope.py** or **auto.py**, while HOPE has significant advantages in terms of accuracy, speed, and memory cost compared with Autograd.
 
-    python demo/a_accuracy/code/network.py
+#### (a) Expand a 1-D neural network with HOPE and Autograd
 
-The results are saved in "demo/a_accuracy/outputs".
+    python demo/expansion/code/net1d.py
+    python hope.py -d demo/expansion/outputs/1D_MLP_Sine/net.pt -o 10 -p 0
+    python plot.py -d demo/expansion/outputs/1D_MLP_Sine/npy/HOPE_[[0.0]]_10.npy -r 4.5
+    python auto.py -d demo/expansion/outputs/1D_MLP_Sine/net.pt -o 10 -p 0
+    python plot.py -d demo/expansion/outputs/1D_MLP_Sine/npy/Autograd_[[0.0]]_10.npy -r 4.5
 
-#### (b) Expand neural networks with HOPE and Autograd
-```
-python demo/a_accuracy/code/expand.py -d demo/a_accuracy/outputs/1D_MLP_Sine/net.pt -r 5
-```
-```
-python demo/a_accuracy/code/expand.py -d demo/a_accuracy/outputs/2D_Conv_AvePool/net.pt -r 2 -p 0,0 -o 8
-```
+The results are saved in **demo/expansion/outputs/1D_MLP_Sine/figs/**.
 
+#### (b) Expand a 2-D neural network with HOPE and Autograd
 
+    python demo/expansion/code/net2d.py
+    python hope.py -d demo/expansion/outputs/2D_Conv_AvePool/net.pt -o 8 -p 0,0
+    python plot.py -d demo/expansion/outputs/2D_Conv_AvePool/npy/HOPE_[[0.0,0.0]]_8.npy -r 2
+    python auto.py -d demo/expansion/outputs/2D_Conv_AvePool/net.pt -o 8 -p 0,0
+    python plot.py -d demo/expansion/outputs/2D_Conv_AvePool/npy/Autograd_[[0.0,0.0]]_8.npy -r 2
+    
 
-All the derivatives are saved in "demo/a_accuracy/outputs/{project_name}/npy", and the approximation results are saved in "demo/a_accuracy/outputs/{project_name}/figs".
+The results are saved in **demo/expansion/outputs/2D_Conv_AvePool/figs/**.
 
+### 2. Interpretation of deep neural networks and function discovery
 
+#### (a) Represent $y=\frac{x_1^2+x_2}{2}$ with implicit neural representation
 
-### 2. The convergence of Taylor series
-
-<img src="docs/fig2.png" width="60%"/>
-
-#### (a) Build some neural networks with different w0
-
-    python demo/b_convergence/code/net.py
-
-#### (b) Expand all the neural networks
-
-    python demo/b_convergence/code/expand.py
-
-### 3. Function discovery
-
-The original function is $y=\frac{x_1^2+x_2}{2}$
-
-#### (a) Represent the function with implicit neural representation
-
-    python demo/c_discovery/code/train.py
+    python demo/discovery/code/train.py
 
 #### (b) Expand the network on reference inputs (0.0, 0.0), (0.5, 0.5), and (-0.5, -0.5)
 ```
-python hope.py -d demo/c_discovery/outputs/discovery_2023_0716_104323/model/best.pt -o 2 -p 0,0
+python hope.py -d demo/discovery/outputs/discovery_{time}/model/best.pt -o 2 -p 0,0 -s
+python hope.py -d demo/c_discovery/outputs/discovery_{time}/model/best.pt -o 2 -p 0.5,0.5 -s
+python hope.py -d demo/c_discovery/outputs/discovery_{time}/model/best.pt -o 2 -p n0.5,n0.5 -s
 ```
 
 $$\begin{aligned}
-y=-0.01+0.00 x_1+0.51 x_2+0.55 x_1^2-0.00 x_1 x_2+0.03 x_2^2 \approx 0.51 x_2+0.55 x_1^2
-\end{aligned}$$
-
-```
-python hope.py -d demo/c_discovery/outputs/discovery_2023_0716_104323/model/best.pt -o 2 -p 0.5,0.5
-```
-
-$$\begin{aligned}
+y&=-0.01+0.00 x_1+0.51 x_2+0.55 x_1^2-0.00 x_1 x_2+0.03 x_2^2  \hspace{100cm}\\
+&\approx 0.51 x_2+0.55 x_1^2 \\
 y&=0.38+0.54(x_1-0.5)+0.51(x_2-0.5)+0.53(x_1-0.5)^2+0.06(x_1-0.5)(x_2-0.5)+0.03(x_2-0.5)^2 \\
 &=0.01-0.02 x_1+0.45 x_2+0.53 x_1^2+0.06 x_1 x_2+0.03 x_2^2 \\
-&\approx 0.45 x_2+0.53 x_1^2
-\end{aligned}$$
-
-```
-python hope.py -d demo/c_discovery/outputs/discovery_2023_0716_104323/model/best.pt -o 2 -p n0.5,n0.5
-```
-
-$$\begin{aligned}
+&\approx 0.45 x_2+0.53 x_1^2 \\
 y&=-0.13-0.51(x_1+0.5)+0.49(x_2+0.5)+0.50(x_1+0.5)^2
 -0.07(x_1+0.5)(x_2+0.5)+0.02(x_2+0.5)^2 \\
 &=-0.03-0.05 x_1+0.48 x_2+0.50 x_1^2-0.07 x_1 x_2+0.02 x_2^2 \\
 &\approx 0.48 x_2+0.50 x_1^2
 \end{aligned}$$
 
-### 4. Heat maps
+The aforementioned equations provide local explanations for this ''black-box'' neural network. When all these local explanations align and reach a consistent conclusion, a global explanation can be obtained.
+
+### 3. Feature selection
 
 <img src="docs/fig3.png" width="80%"/>
 
 #### (a) Train an MNIST digit classifier
 
-    python demo/d_heatmap/code/trainMNIST.py
+    python demo/heatmap/code/trainMNIST.py
 
 #### (b) Separate it into ten equivalent single-output classifiers 
 
-    python demo/d_heatmap/code/single_net.py -p demo/d_heatmap/outputs/MNIST_{time}
+    python demo/heatmap/code/single_net.py -p demo/heatmap/outputs/MNIST_{time}
 
-the results are saved in ''demo/4heatmap/outputs/MNIST_{time}/model/SingleOutput''
+the results are saved in ''demo/heatmap/outputs/MNIST_{time}/model/SingleOutput''
 
 #### (c) Heat maps by HOPE and perturbation-based method
 
-    python demo/d_heatmap/code/heatmaps.py -p demo/d_heatmap/outputs/MNIST_{time}
+    python demo/heatmap/code/heatmaps.py -p demo/heatmap/outputs/MNIST_{time}
 
 # Citations
 ```

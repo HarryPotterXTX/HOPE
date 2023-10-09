@@ -55,7 +55,7 @@ def get_optimizer(optimizer_name, model, learning_rate):
 
 def train(opt, Log):
     # Dataset
-    train_dataset = datasets.MNIST(root='demo/d_heatmap/data', train=True, transform=transforms.ToTensor(), download=opt.Dataset.download)
+    train_dataset = datasets.MNIST(root='demo/heatmap/data', train=True, transform=transforms.ToTensor(), download=opt.Dataset.download)
     train_loader  = DataLoader( train_dataset, batch_size=opt.Train.batch_size, shuffle=opt.Dataset.shuffle, num_workers=1)
 
     # Model, loss and optimizer
@@ -131,7 +131,7 @@ if __name__ == '__main__':
         description='Parameter configuration of Taylor decomposition')
     parser.add_argument('-g', help='availabel gpu list', default='0',
                         type=lambda s: [int(item) for item in s.split(',')])
-    parser.add_argument('-p', type=str, default='demo/d_heatmap/code/MNIST.yaml', help='yaml file path')
+    parser.add_argument('-p', type=str, default='demo/heatmap/code/MNIST.yaml', help='yaml file path')
     args = parser.parse_args()
     os.environ["CUDA_VISIBLE_DEVICES"] = ','.join([str(i) for i in args.g])
 

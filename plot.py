@@ -7,8 +7,8 @@ from matplotlib import cm
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.axes_grid1 import Divider, Size
-plt.rcParams["font.family"] = "Times New Roman"
 plt.rcParams['mathtext.default'] = 'regular'
+plt.rcParams["font.family"] = "Times New Roman"
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 colors = ["#e64b35", "#f8c370", "#5599c7", "#c39bd2", "#48c9b0", "#e6b0aa"] # red, yellow, blue
 

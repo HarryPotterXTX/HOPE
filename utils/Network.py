@@ -1,7 +1,6 @@
-import numpy as np
 import torch
+import numpy as np
 from torch import nn
-import random
 
 def sine_init(m):
     with torch.no_grad():

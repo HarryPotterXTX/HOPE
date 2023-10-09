@@ -1,19 +1,16 @@
-import sys
 import os
-from os.path import join as opj
-from os.path import dirname as opd
-from typing import Dict, Union
+import sys
 import time
-from torch.utils.tensorboard import SummaryWriter
 import torch
-import numpy as np
 import random
-
+import numpy as np
+from typing import Dict
+from torch.utils.tensorboard import SummaryWriter
 timestamp = time.strftime("_%Y_%m%d_%H%M%S")
 
 class MyLogger():
     def __init__(self, project_name:str, stdlog:bool=True, tensorboard:bool=True, outputs_dir:str='outputs'):
-        self.project_dir = opj(outputs_dir, project_name)
+        self.project_dir = os.path.join(outputs_dir, project_name)
         self.stdlog = stdlog
         self.tensorboard = tensorboard
         self.project_dir += timestamp
@@ -34,7 +31,7 @@ class MyLogger():
         self.dir_init()
 
     def stdlog_init(self):
-        stderr_handler=open(opj(self.logdir,'stderr.log'), 'w')
+        stderr_handler=open(os.path.join(self.logdir,'stderr.log'), 'w')
         sys.stderr=stderr_handler
         
     def tensorboard_init(self,):
@@ -42,10 +39,10 @@ class MyLogger():
         self.logger_dict['tblogger']=self.tblogger
     
     def dir_init(self,):
-        self.script_dir = opj(self.project_dir, 'script')
-        self.model_dir = opj(self.project_dir, 'model')
-        # self.predict_dir = opj(self.project_dir, 'predict')
-        # self.info_dir = opj(self.project_dir, 'info')
+        self.script_dir = os.path.join(self.project_dir, 'script')
+        self.model_dir = os.path.join(self.project_dir, 'model')
+        # self.predict_dir = os.path.join(self.project_dir, 'predict')
+        # self.info_dir = os.path.join(self.project_dir, 'info')
         os.mkdir(self.script_dir)
         os.mkdir(self.model_dir)
         # os.mkdir(self.predict_dir)

@@ -7,7 +7,7 @@ Train:
   optimizer: SGD
 
 Log: 
-  outputs_dir: demo/d_heatmap/outputs
+  outputs_dir: demo/heatmap/outputs
   project_name: MNIST
   stdlog: false
   tensorboard: true

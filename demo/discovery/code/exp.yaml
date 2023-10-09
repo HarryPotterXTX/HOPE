@@ -27,7 +27,7 @@ Framework:
     ]
     pretrained: none
 Log: 
-  outputs_dir: demo/c_discovery/outputs
+  outputs_dir: demo/discovery/outputs
   project_name: discovery
   stdlog: false
   tensorboard: true
