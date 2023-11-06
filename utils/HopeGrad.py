@@ -46,10 +46,10 @@ def hope_module(f, vz:dict, order:int=1, mixed:int=0):
             if mixed == 1:                      # mixed=1: calculate all the mixed partial derivatives
                 vx = {}                             
                 dx, dz = Wt.shape
-                Wk = torch.ones(1, dz)
+                Wk = torch.ones(1, dz).to(Wt.device)
                 for k in range(1, order+1):
-                    augW1 = torch.kron(Wt.contiguous(), torch.ones(dx**(k-1), 1))  
-                    augW2 = torch.kron(torch.ones(dx, 1), Wk) 
+                    augW1 = torch.kron(Wt.contiguous(), torch.ones(dx**(k-1), 1).to(Wt.device))  
+                    augW2 = torch.kron(torch.ones(dx, 1).to(Wt.device), Wk) 
                     Wk = torch.mul(augW1, augW2)
                     vx[k] = torch.matmul(Wk, vz[k].unsqueeze(-1))
             elif mixed == 2:                    # mixed=2: calculate part of the mixed partial derivatives
@@ -145,7 +145,7 @@ def hope_module(f, vz:dict, order:int=1, mixed:int=0):
     elif module == 'AvgPool2DBackward0':
         kernel_size, stride, padding = f._saved_kernel_size, f._saved_stride, f._saved_padding
         x = f._saved_self   # x: (batch channel height width); W: (outdim=channel channel height width)
-        W = torch.zeros(x.shape[-3], x.shape[-3], kernel_size[0], kernel_size[1])
+        W = torch.zeros(x.shape[-3], x.shape[-3], kernel_size[0], kernel_size[1]).to(x.device)
         for i in range(W.shape[0]):
             W[i][i] = torch.ones(kernel_size[0], kernel_size[1])/(kernel_size[0]*kernel_size[1])
         output_padding = ((x.shape[-2]-W.shape[-2]+2*padding[0])%stride[0], (x.shape[-1]-W.shape[-1]+2*padding[1])%stride[1])
