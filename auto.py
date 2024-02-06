@@ -44,7 +44,7 @@ def main(net_path, order, point, show):
     time_auto = time.time()-time_start
     print('It takes {:.4f}s to calculate all the {}-order derivatives with Autograd.'.format(time_auto, order))
     v = {k: [float(d.detach().numpy()) for d in v[k]] for k in v.keys()}
-    print(f'The number of derivatives of each order are: {str([len(v[k]) for k in v.keys()])}')
+    print(f'The number of derivatives of each order are: {str([len(v[k]) for k in sorted(v.keys())])}')
     np.save(npy_path, v)
 
     # Record the time cost

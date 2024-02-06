@@ -12,37 +12,13 @@ plt.rcParams["font.family"] = "Times New Roman"
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
 colors = ["#e64b35", "#f8c370", "#5599c7", "#c39bd2", "#48c9b0", "#e6b0aa"] # red, yellow, blue
 
-def create_coords(coords_shape, minimum, maximum):
-    parameter = []
-    for i in range(len(coords_shape)):
-        parameter.append(torch.linspace(minimum[i],maximum[i],coords_shape[i]))
-    coords = torch.stack(torch.meshgrid(parameter),axis=-1)
-    coords = np.array(coords)
-    return coords
+from utils.Global import create_coords, taylor_output
 
 def R2(y, y1):
     y, y1 = y.flatten(), y1.flatten()
     mse = ((y - y1)**2).sum()
     var = ((y - y.mean())**2).sum()
     return 1-mse/var
-
-def taylor_output(grad_dict:dict, dx:np.array):
-    ''' input: grad_dict: v = {'0':[y0], '1':[ay/a(x_1),...,ay/a(x_p)], ...}; dx: (batch, p)
-        ouptut: y = \sum a^ky/a(x_i1)...a(x_ik)*(x_i1*...*x_ik)/k!
-    '''
-    y = np.ones((dx.shape[0], 1))*grad_dict[0]              # y0
-    dx = [dx[:,i:i+1] for i in range(dx.shape[1])]          # [x_1, x_2, ..., x_p]
-    for k in range(1, max(grad_dict.keys())+1):
-        idxs = create_coords([len(dx)]*k, [0]*k, [len(dx)-1]*k).astype(np.int16)
-        idxs = idxs.reshape((-1, idxs.shape[-1]))           # eg. if k=3, p=2： [[000], [001], [010], ..., [111]]
-        assert idxs.shape[0]==len(grad_dict[k]), "Error!"
-        for i in range(idxs.shape[0]):
-            idx = idxs[i]
-            dy = 1
-            for id in idx:
-                dy = np.multiply(dy, dx[id])
-            y = y + grad_dict[k][i]*dy/math.factorial(k)    # y = y + grad*(dx)^k/k!
-    return y
 
 def plot1d(x, y_net, y_poly, fig_path, point):
     width, height = 28/2.54, 21/2.54

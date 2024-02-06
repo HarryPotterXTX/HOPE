@@ -25,8 +25,8 @@ def main(net_path, order, point, show):
     time_hope = time.time()-time_start
     print('It takes {:.4f}s to calculate all the {}-order derivatives with HOPE.'.format(time_hope, order))
     v = {k: list(x.hope_grad[k].detach().reshape(-1).numpy()) for k in x.hope_grad.keys()}
-    v[0] = [float(y.detach().numpy())]
-    print(f'The number of derivatives of each order are: {str([len(v[k]) for k in v.keys()])}')
+    v[0] = [float(y.detach().numpy()[0,0])]
+    print(f'The number of derivatives of each order are: {str([len(v[k]) for k in sorted(v.keys())])}')
     np.save(npy_path, v)
 
     # Record the time cost
