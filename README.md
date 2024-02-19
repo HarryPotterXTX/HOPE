@@ -75,9 +75,19 @@ y&=-0.13-0.51(x_1+0.5)+0.49(x_2+0.5)+0.50(x_1+0.5)^2
 
 The aforementioned equations provide local explanations for this ''black-box'' neural network. When all these local explanations align and reach a consistent conclusion, a global explanation can be obtained.
 
+#### (c) Expand the network on multiple reference inputs  and find a global explanation
+```
+python global.py -d demo/discovery/outputs/discovery_{time}/model/best.pt
+```
+<img src="docs/fig3-1.png" width="100%"/>
+
+One can easily find the function expressed by the neural network from the top 10 coefficients
+
+<img src="docs/fig3-2.png" width="60%"/>
+
 ### 3. Feature selection
 
-<img src="docs/fig3.png" width="80%"/>
+<img src="docs/fig4.png" width="80%"/>
 
 #### (a) Train an MNIST digit classifier
 
