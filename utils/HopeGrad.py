@@ -1,12 +1,14 @@
 import math
 import torch
 import torch.nn.functional as F
+
 from utils.ChainMatrix import ChainTransMatrix, FormulaCal
-from utils.Activation import SineAct, SigmoidAct, TanhAct
+from utils.Activation import SineAct, SigmoidAct, TanhAct, ReLUAct, LeakyReLUAct, ELUAct, GELUAct
 
 global common_modules
 common_modules = {}
-ActDict = {'SinBackward0':SineAct, 'SigmoidBackward0':SigmoidAct, 'TanhBackward0':TanhAct}
+ActDict = {'SinBackward0':SineAct, 'SigmoidBackward0':SigmoidAct, 'TanhBackward0':TanhAct, 
+           'ReluBackward0':ReLUAct, 'LeakyReluBackward0':LeakyReLUAct, 'EluBackward0':ELUAct, 'GeluBackward0':GELUAct}
 
 def load_class(name:str, order:int, **kwargs):
     ''' Save commonly used components to avoid time waste of initialization'''
@@ -80,15 +82,27 @@ def hope_module(f, vz:dict, order:int=1, mixed:int=0):
         vx = {k:vz[k].reshape(f._saved_self_sym_sizes) for k in vz.keys()}
         vs.append(vx)
     ######################### z = act(x) #########################
-    elif module in ['SinBackward0', 'SigmoidBackward0', 'TanhBackward0']:
+    elif module in ['SinBackward0', 'SigmoidBackward0', 'TanhBackward0', 'ReluBackward0', 'LeakyReluBackward0', 'EluBackward0', 'GeluBackward0']:
         Beta = {}
-        act_module = load_class(module, order=order)
+        kwargs = {}
         if module == 'SinBackward0':        # the input of Sine
             data = f._saved_self
         elif module == 'SigmoidBackward0':  # the output of Sigmoid
             data = f._saved_result
         elif module == 'TanhBackward0':     # the output of Tanh
             data = f._saved_result
+        elif module == 'ReluBackward0':     # the output of ReLU
+            data = f._saved_result
+        elif module == 'LeakyReluBackward0':# the input of LeakyReLU
+            data = f._saved_self
+            kwargs = {'negative_slope':f._saved_negative_slope}
+        elif module == 'EluBackward0':      # the input of ELU
+            data = f._saved_self
+            kwargs = {'alpha':f._saved_alpha}
+        elif module == 'GeluBackward0':      # the input of GELU                     
+            data = f._saved_self
+            kwargs = {'approximate':f._saved_approximate}
+        act_module = load_class(module, order=order, **kwargs)
         for k in range(1, order+1):
             Beta[k] = act_module.diff(data, k)
         vs.append(cal_act_vx(Beta, vz))

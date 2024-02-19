@@ -11,7 +11,7 @@ def cald(y, x, idx):
     return torch.autograd.grad(y, x, grad_outputs=torch.ones_like(y), create_graph=True)[0][:,idx-1].reshape(-1, 1)
 
 def autograd(y:torch.tensor, x:torch.tensor, order:int=10):
-    '''calculate the n-order partial derivatives'''
+    '''calculate the n-order partial derivatives with Autograd'''
     v = {0:[y]}
     p = x.numel()
     bar = order if p==1 else int((1-p**(order+1))/(1-p))-1

@@ -52,6 +52,8 @@ def ActInit(net, act):
         net.apply(sigmoid_init)
     elif act == 'Tanh':
         net.apply(sigmoid_init)
+    elif act == 'GELU':
+        net.apply(sigmoid_init)
     else:
         net.apply(relu_init)
 
@@ -60,13 +62,18 @@ def Activation(act):
         act_fun = Sine()
     elif act == 'ReLU':
         act_fun = nn.ReLU()
-    elif 'LeakyReLU' in act:
-        negative_slope = float(act[9:])
-        act_fun = nn.LeakyReLU(negative_slope)
+    elif act[:9] == 'LeakyReLU':
+        negative_slope = 0.01 if act=='LeakyReLU' else float(act[9:])
+        act_fun = nn.LeakyReLU(negative_slope=negative_slope)
     elif act == 'Sigmoid':
         act_fun = nn.Sigmoid()
     elif act == 'Tanh':
         act_fun = nn.Tanh()
+    elif act[:3] == 'ELU':
+        alpha = 1 if act=='ELU' else float(act[3:])
+        act_fun = nn.ELU(alpha=alpha)
+    elif act == 'GELU':
+        act_fun = nn.GELU()
     elif act == 'None':
         act_fun = NoneActFun()
     else:
