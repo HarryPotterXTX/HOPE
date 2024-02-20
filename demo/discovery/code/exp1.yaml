@@ -1,0 +1,35 @@
+Framework:
+  sampler:
+    mode: 3
+    z: 1
+  Train:
+    batch_size: 65536
+    epochs: 100
+    device: cuda
+    optimizer: 
+      type: Adamax
+      lr: 1e-3
+    lr_scheduler:
+        name: MultiStepLR
+        milestones: [4000,8000]
+        gamma: 0.2
+  Eval:
+    batch_size: 128
+    epochs: 100
+    device: cpu
+  Preprocess:
+    normal_min: none
+    normal_max: none
+  Network:
+    structure: [
+      Linear_4_64, Sine,
+      Linear_64_64, Sine,
+      Linear_64_64, Sine,
+      Linear_64_1, Sine
+    ]
+    pretrained: none
+Log: 
+  outputs_dir: demo/discovery/outputs
+  project_name: discovery1
+  stdlog: false
+  tensorboard: true

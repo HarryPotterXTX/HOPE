@@ -54,7 +54,7 @@ The results are saved in **demo/expansion/outputs/2D_Conv_AvePool/figs/**.
 
     python demo/discovery/code/train.py
 
-#### (b) Expand the network on reference inputs (0.0, 0.0), (0.5, 0.5), and (-0.5, -0.5)
+Expand the network on reference inputs (0.0, 0.0), (0.5, 0.5), and (-0.5, -0.5)
 ```
 python hope.py -d demo/discovery/outputs/discovery_{time}/model/best.pt -o 2 -p 0,0 -s
 python hope.py -d demo/c_discovery/outputs/discovery_{time}/model/best.pt -o 2 -p 0.5,0.5 -s
@@ -75,19 +75,33 @@ y&=-0.13-0.51(x_1+0.5)+0.49(x_2+0.5)+0.50(x_1+0.5)^2
 
 The aforementioned equations provide local explanations for this ''black-box'' neural network. When all these local explanations align and reach a consistent conclusion, a global explanation can be obtained.
 
-#### (c) Expand the network on multiple reference inputs  and find a global explanation
+Expand the network on multiple reference inputs  and find a global explanation
 ```
 python global.py -d demo/discovery/outputs/discovery_{time}/model/best.pt
 ```
-<img src="docs/fig3-1.png" width="100%"/>
+<img src="docs/fig3.png" width="100%"/>
 
-One can easily find the function expressed by the neural network from the top 10 coefficients
+One can easily find the function expressed by the neural network from the top coefficients.
 
-<img src="docs/fig3-2.png" width="60%"/>
+#### (b) Represent $y=0.5+x_1+0.6x_2x_3-0.8x_2x_4-x_3x_5+x_1x_2x_3$ with implicit neural representation
+
+```
+python demo/discovery/code/train1.py
+```
+
+Get the Taylor coefficients
+
+```
+python global.py -d  demo/discovery/outputs/discovery1_3_{time}/model/best.pt -p 0,0,0,0,0 -o 3 -r 0.5 -n 3 -t 15
+```
+
+<img src="docs/fig4.png" width="70%"/>
+
+The Taylor polynomial on reference point [0, 0, 0, 0, 0] is $y=0.5+1.01x_1+0.62x_2x_3-0.84x_2x_4-1.04x_3x_5+1.08x_1x_2x_3+0.22x_1^2$.
 
 ### 3. Feature selection
 
-<img src="docs/fig4.png" width="80%"/>
+<img src="docs/fig5.png" width="70%"/>
 
 #### (a) Train an MNIST digit classifier
 

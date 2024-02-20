@@ -40,7 +40,7 @@ def judge_exist(net_dir, order, x):
             return 1, npy_path
     return 0, os.path.join(net_dir, 'npy', f'HOPE_[[{x}]]_{order}.npy').replace(" ","")
 
-def plot(coefs, ref_coef, title, xlabels, order):
+def plot(coefs, ref_coef, title, xlabels, order, global_dir):
     BOX_EDGE_COLOR = "#3A3A3A"
     BOX_COLOR = ["#d98880", "#76d7c3", "#f9d7a0", "#7fb3d5", "#e6b0aa", "#d5dadb"]
     def deal_zero(num:float):
@@ -71,9 +71,16 @@ def plot(coefs, ref_coef, title, xlabels, order):
     # plt.xlabel('Feature Interactions', fontsize=18) 
     plt.ylabel('Taylor Coefficients', fontsize=18) 
     plt.subplots_adjust(left=1.5/(1.5+0.5+var_num), right=0.99, top=0.93, bottom=(order*(4.8*0.05))/(4.8+order*(4.8*0.05)))
-    plt.show()
+    if global_dir == None:
+        plt.show()
+    elif 'Top' in title:
+        plt.savefig(os.path.join(global_dir,'global_top.png'))
+        plt.savefig(os.path.join(global_dir,'global_top.pdf'))
+    else:
+        plt.savefig(os.path.join(global_dir,'global.png'))
+        plt.savefig(os.path.join(global_dir,'global.pdf'))
 
-def main(net_path, order, point, num, coord_range, top):
+def main(net_path, order, point, num, coord_range, top, save):
     net = torch.load(net_path).eval()
     print(net)
 
@@ -103,14 +110,22 @@ def main(net_path, order, point, num, coord_range, top):
     # Taylor coefficient on refenrence points
     ref_coef = coef
 
+    # png path
+    if save:
+        global_dir = os.path.join(os.path.dirname(net_path), 'global')
+        if not os.path.exists(global_dir):
+            os.mkdir(global_dir)
+    else:
+        global_dir = None
+
     # show the results
-    plot(coefs, ref_coef, title=f'Coefficients on {point[0]}', xlabels=get_interactions(p, order), order=order)
+    plot(coefs, ref_coef, title=f'Coefficients on {point}', xlabels=get_interactions(p, order), order=order, global_dir=global_dir)
 
     # show the results of the top m
     top_ref_coef = ref_coef[abs(ref_coef).argsort()[-top:]]
     top_mean_coef = coefs[:,abs(ref_coef).argsort()[-top:]]
     xlabels = [get_interactions(p, order)[i] for i in abs(ref_coef).argsort()[-top:]]
-    plot(top_mean_coef, top_ref_coef, title=f'Top {top} coefficients on {point[0]}', xlabels=xlabels, order=order)
+    plot(top_mean_coef, top_ref_coef, title=f'Top {top} coefficients on {point}', xlabels=xlabels, order=order, global_dir=global_dir)
 
 if __name__=="__main__":
     parser = argparse.ArgumentParser(description='Taylor expansion on multiple points')
@@ -120,6 +135,7 @@ if __name__=="__main__":
     parser.add_argument('-n', type=int, default=10, help='number of samples')
     parser.add_argument('-r', type=float, default=1, help='coords range')
     parser.add_argument('-t', type=int, default=10, help='show the results of the top t')
+    parser.add_argument('--save', default=False, action='store_true', help='save png')
     args = parser.parse_args()
 
-    main(net_path=args.d, order=args.o, point=args.p, num=args.n, coord_range=args.r, top=args.t)
+    main(net_path=args.d, order=args.o, point=args.p, num=args.n, coord_range=args.r, top=args.t, save=args.save)
