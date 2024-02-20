@@ -62,8 +62,12 @@ def plot(coefs, ref_coef, title, xlabels, order, global_dir):
         y = (coefs[:,idx].mean()+ref_coef[idx])/2
         y1 = (vmax-vmin)*0.04+y if coefs[:,idx].mean()>ref_coef[idx] else -(vmax-vmin)*0.04+y
         y2 = -(vmax-vmin)*0.04+y if coefs[:,idx].mean()>ref_coef[idx] else (vmax-vmin)*0.04+y
-        plt.text(50+100*idx+20, y1, '{:.2f}'.format(deal_zero(coefs[:,idx].mean())))
+        plt.text(50+100*idx+20, y1, '{:.2f}'.format(deal_zero(coefs[:,idx].mean())), color='blue')
         plt.text(50+100*idx+20, y2, '{:.2f}'.format(deal_zero(ref_coef[idx])), color='red')
+        if xlabels[idx]=='c':
+            plt.text(50+100*idx+20, y, '{:.2f}'.format(deal_zero(ref_coef[idx])), color='black')
+        else:
+            plt.text(50+100*idx+20, y, '{:.2f}'.format(deal_zero((coefs[:,idx].mean()+ref_coef[idx])/2)), color='black')
     ax = plt.gca()
     ax.set_xticklabels(xlabels, fontsize=12) 
     plt.xlim(0,100*idx+150)
@@ -75,10 +79,8 @@ def plot(coefs, ref_coef, title, xlabels, order, global_dir):
         plt.show()
     elif 'Top' in title:
         plt.savefig(os.path.join(global_dir,'global_top.png'))
-        plt.savefig(os.path.join(global_dir,'global_top.pdf'))
     else:
         plt.savefig(os.path.join(global_dir,'global.png'))
-        plt.savefig(os.path.join(global_dir,'global.pdf'))
 
 def main(net_path, order, point, num, coord_range, top, save):
     net = torch.load(net_path).eval()
