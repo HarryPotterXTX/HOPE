@@ -88,7 +88,7 @@ python demo/discovery/code/train1.py
 Get the Taylor coefficients
 
 ```
-python global.py -d  demo/discovery/outputs/discovery1_3_{time}/model/best.pt -p 0,0,0,0,0 -o 3 -r 0.5 -n 3 -t 14
+python global.py -d demo/discovery/outputs/discovery1_3_{time}/model/best.pt -p 0,0,0,0,0 -o 3 -r 0.5 -n 3 -t 14
 ```
 
 <img src="docs/fig4.png" width="70%"/>
