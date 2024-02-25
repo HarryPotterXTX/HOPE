@@ -79,7 +79,7 @@ python global.py -d demo/discovery/outputs/discovery_{time}/model/best.pt
 
 One can easily find the function expressed by the neural network from the top coefficients.
 
-#### (b) Represent $y=0.5+x_1+0.6x_2x_3-0.8x_2x_4+x_1x_2x_3-zx_3$ with implicit neural representation
+#### (b) Represent $y=0.5+x_1+0.6x_2x_3-0.8x_2x_4+x_1x_2x_3-x_3x_5$ with implicit neural representation
 
 ```
 python demo/discovery/code/train1.py
@@ -93,7 +93,7 @@ python global.py -d demo/discovery/outputs/discovery1_3_{time}/model/best.pt -p 
 
 <img src="docs/fig4.png" width="70%"/>
 
-The local Taylor coefficients on reference point are marked in red, the average values of coefficients obtained from multiple reference points are marked in blue, and the coefficients that combine local and global properties are marked in black. The final Taylor polynomial on reference point [0, 0, 0, 0, 0] is $y=0.56+0.94x_1+0.60x_2x_3-0.78x_2x_4+1.02x_1x_2x_3-0.96x_3$.
+The local Taylor coefficients on reference point are marked in red, the average values of coefficients obtained from multiple reference points are marked in blue, and the coefficients that combine local and global properties are marked in black. The final Taylor polynomial on reference point [0, 0, 0, 0, 0] is $y=0.48+1.01x_1+0.58x_2x_3-0.80x_2x_4+1.02x_1x_2x_3-1.00x_3x_5$.
 
 ### 3. Feature selection
 

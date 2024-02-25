@@ -1,10 +1,12 @@
+# mode=1: x1~x4->net(ignore z)->y || mode=2: x1~x4->net(know z)->y || mode=3: x1~x4,z->net->y
+# mode=1: lr=1e-3, epochs=20 || mode=2: lr=1e-3, epochs=1000, z=-1,-0.5,0,0.5,1 || mode=3: lr=1e-3, epochs=20.
 Framework:
   sampler:
     mode: 3
-    z: 1
+    z: 0
   Train:
     batch_size: 65536
-    epochs: 100
+    epochs: 200
     device: cuda
     optimizer: 
       type: Adamax
@@ -15,7 +17,7 @@ Framework:
         gamma: 0.2
   Eval:
     batch_size: 128
-    epochs: 100
+    epochs: 20
     device: cpu
   Preprocess:
     normal_min: none
