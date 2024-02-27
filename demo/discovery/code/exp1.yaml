@@ -1,5 +1,5 @@
 # mode=1: x1~x4->net(ignore z)->y || mode=2: x1~x4->net(know z)->y || mode=3: x1~x4,z->net->y
-# mode=1: lr=1e-3, epochs=20 || mode=2: lr=1e-3, epochs=1000, z=-1,-0.5,0,0.5,1 || mode=3: lr=1e-3, epochs=20.
+# mode=1: lr=1e-3, epochs=200 || mode=2: lr=1e-3, epochs=1000, z=-1,-0.5,0,0.5,1 || mode=3: lr=1e-3, epochs=200.
 Framework:
   sampler:
     mode: 3
@@ -27,7 +27,7 @@ Framework:
       Linear_4_64, Sine,
       Linear_64_64, Sine,
       Linear_64_64, Sine,
-      Linear_64_1, Sine
+      Linear_64_1
     ]
     pretrained: none
 Log: 

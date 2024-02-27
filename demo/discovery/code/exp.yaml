@@ -23,7 +23,7 @@ Framework:
       Linear_2_64, Sine,
       Linear_64_64, Sine,
       Linear_64_64, Sine,
-      Linear_64_1, Sine
+      Linear_64_1
     ]
     pretrained: none
 Log: 

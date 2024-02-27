@@ -62,6 +62,11 @@ def plot(coefs, ref_coef, title, xlabels, order, global_dir, save):
         y = (coefs[:,idx].mean()+ref_coef[idx])/2
         y1 = (vmax-vmin)*0.04+y if coefs[:,idx].mean()>ref_coef[idx] else -(vmax-vmin)*0.04+y
         y2 = -(vmax-vmin)*0.04+y if coefs[:,idx].mean()>ref_coef[idx] else (vmax-vmin)*0.04+y
+        if max(y1,y2)>vmax:
+            y1, y2 = y1-(max(y1,y2)-vmax), y2-(max(y1,y2)-vmax)
+        elif min(y1,y2)<vmin:
+            y1, y2 = y1+(vmin-min(y1,y2)), y2+(vmin-min(y1,y2))
+        y = (y1+y2)/2
         plt.text(50+100*idx+20, y1, '{:.2f}'.format(deal_zero(coefs[:,idx].mean())), color='blue')
         plt.text(50+100*idx+20, y2, '{:.2f}'.format(deal_zero(ref_coef[idx])), color='red')
         if xlabels[idx]=='c':
@@ -131,7 +136,7 @@ if __name__=="__main__":
     parser.add_argument('-d', type=str, default='demo/discovery/outputs/discovery_2024_0202_181236/model/best.pt', help='network path')
     parser.add_argument('-o', type=int, default=4, help='expansion order')
     parser.add_argument('-p', type=lambda s: [float(item) if item[0]!='n' else -float(item[1:]) for item in s.split(',')], default='0, 0', help='reference input')
-    parser.add_argument('-n', type=int, default=10, help='number of samples')
+    parser.add_argument('-n', type=int, default=30, help='number of samples')
     parser.add_argument('-r', type=float, default=1, help='coords range')
     parser.add_argument('-t', type=int, default=10, help='show the results of the top t')
     parser.add_argument('--save', default=False, action='store_true', help='save png')

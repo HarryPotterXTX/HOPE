@@ -7,6 +7,8 @@ from matplotlib import cm
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 from mpl_toolkits.axes_grid1 import Divider, Size
+import sys
+sys.path.append(os.path.abspath(os.path.join(__file__, "../../../..")))
 plt.rcParams['mathtext.default'] = 'regular'
 plt.rcParams["font.family"] = "Times New Roman"
 os.environ['KMP_DUPLICATE_LIB_OK']='True'
