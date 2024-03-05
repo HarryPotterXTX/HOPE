@@ -32,7 +32,7 @@ class LeakyReLUAct():
         gradient = torch.zeros_like(input)
         if n == 1:
             gradient[input>0] = 1
-            gradient[input<0] = self.negative_slope
+            gradient[input<=0] = self.negative_slope
             # gradient[input==0] = (1 + self.negative_slope)/2  # Loosely averaged
         return gradient
 
@@ -94,8 +94,8 @@ class ELUAct():
     def diff(self, input:torch.tensor, n:int):
         gradient = torch.zeros_like(input)
         if n == 1:
-            gradient[input>=0] = 1
-        gradient[input<0] = self.alpha*torch.exp(input[input<0])
+            gradient[input>0] = 1
+        gradient[input<=0] = self.alpha*torch.exp(input[input<=0])
         return gradient
     
 # class GELUAct():

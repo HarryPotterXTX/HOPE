@@ -165,6 +165,11 @@ def hope_module(f, vz:dict, order:int=1, mixed:int=0):
         output_padding = ((x.shape[-2]-W.shape[-2]+2*padding[0])%stride[0], (x.shape[-1]-W.shape[-1]+2*padding[1])%stride[1])
         vx = {k:F.conv_transpose2d(input=vz[k], weight=torch.pow(W, k), stride=stride, padding=padding, output_padding=output_padding) for k in vz.keys()}
         vs = [vx]
+    ######################### z = nn.MaxPool2d()(x) #########################
+    elif module == 'MaxPool2DWithIndicesBackward0':
+        kernel_size, stride, padding, output_size, indices = f._saved_kernel_size, f._saved_stride, f._saved_padding, f._saved_self.shape, f._saved_result1
+        vx = {k:F.max_unpool2d(input=vz[k], indices=indices, kernel_size=kernel_size, stride=stride, padding=padding, output_size=output_size) for k in vz.keys()}
+        vs = [vx]
     ######################### z = c #########################
     elif module == 'NoneType':
         pass
