@@ -105,13 +105,12 @@ the results are saved in ''demo/heatmap/outputs/MNIST_{time}/model/SingleOutput'
 
 # Citations
 ```
-@article 
-{
-xiao2023hope,
-title={HOPE: High-order Polynomial Expansion of Black-box Neural Networks},
-author={Xiao, Tingxiong and Zhang, Weihang and Cheng, Yuxiao and Suo, Jinli},
-journal={arXiv preprint arXiv:2307.08192},
-year={2023}
+@article{xiao2024hope,
+  title={HOPE: High-order Polynomial Expansion of Black-box Neural Networks},
+  author={Xiao, Tingxiong and Zhang, Weihang and Cheng, Yuxiao and Suo, Jinli},
+  journal={IEEE Transactions on Pattern Analysis and Machine Intelligence},
+  year={2024},
+  publisher={IEEE}
 }
 ```
 # Contact
